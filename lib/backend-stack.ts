@@ -36,5 +36,23 @@ export class BackendStack extends cdk.Stack {
       tableName: "Orders",
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+
+    /* Creating our Lambda function for PostConfirmation
+     * - This function is triggered after a user is confirmed
+     * - It creates a user in our (Users) table
+     *  - Grants write access to the Users table
+     */
+    const postConfirmation = new cdk.aws_lambda_nodejs.NodejsFunction(
+      this,
+      "PostConfirmationFunction",
+      {
+        entry: path.join(__dirname, "PostConfirmation", "handler.ts"),
+        handler: "handler",
+        environment: {
+          TABLE_NAME: UsersTable.tableName,
+        },
+      }
+    );
+    UsersTable.grantWriteData(postConfirmation);
   }
 }

@@ -97,5 +97,68 @@ export class BackendStack extends cdk.Stack {
     ProductTable.grantReadWriteData(uploadFileLambda);
     bucket.grantPut(uploadFileLambda);
     bucket.grantPutAcl(uploadFileLambda);
+
+    /* Creating our Cognito User Pool
+     * - This is where we will manage our users
+     */
+
+    const userPool = new cdk.aws_cognito.UserPool(this, "UserPool", {
+      userPoolName: "USER-POOL",
+      selfSignUpEnabled: true,
+
+      autoVerify: {
+        email: true,
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: false,
+        requireUppercase: false,
+        requireDigits: false,
+        requireSymbols: false,
+      },
+      signInAliases: {
+        email: true,
+      },
+      standardAttributes: {
+        email: {
+          required: true,
+          mutable: true,
+        },
+      },
+      customAttributes: {
+        name: new cdk.aws_cognito.StringAttribute({
+          minLen: 3,
+          maxLen: 20,
+        }),
+      },
+      lambdaTriggers: {
+        postConfirmation: postConfirmation,
+      },
+    });
+
+    /* Creating our Cognito User Pool Client
+     * - This is where we will manage our users
+     */
+    const client = new cdk.aws_cognito.UserPoolClient(
+      this,
+      "USER-POOL-CLIENT",
+      {
+        userPool: userPool,
+        authFlows: {
+          userPassword: true,
+          userSrp: true,
+        },
+      }
+    );
+
+    const adminGroup = new cdk.aws_cognito.CfnUserPoolGroup(
+      this,
+      "AdminGroup",
+      {
+        userPoolId: userPool.userPoolId,
+        groupName: "admin",
+        description: "Admin user group",
+      }
+    );
   }
 }

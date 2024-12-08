@@ -263,8 +263,68 @@ export class BackendStack extends cdk.Stack {
     );
 
     OrderTable.grantReadWriteData(createOrder);
+
+    const isItemInStockMappedTask = new cdk.aws_stepfunctions.Map(
+      this,
+      "isItemInStockMappedTask",
+      {
+        itemsPath: "$.order",
+        resultPath: cdk.aws_stepfunctions.JsonPath.DISCARD,
+      }
+    ).itemProcessor(
+      new cdk.aws_stepfunctions_tasks.LambdaInvoke(this, "isItemInStockTask", {
+        lambdaFunction: isItemInStock,
+        payloadResponseOnly: true,
+      })
+    );
+
+    // Building Blocks for StepFunctions
+    const updateItemStockMappedTask = new cdk.aws_stepfunctions.Map(
+      this,
+      "updateItemStockMappedTask",
+      {
+        itemsPath: "$.order",
+        itemSelector: {
+          "item.$": "$$.Map.Item.Value",
+        },
+      }
+    ).itemProcessor(
+      new cdk.aws_stepfunctions_tasks.LambdaInvoke(
+        this,
+        "updateItemStockTask",
+        {
+          lambdaFunction: updateItemStock,
+        }
+      )
+    );
+
+    const createOrderTask = new cdk.aws_stepfunctions_tasks.LambdaInvoke(
+      this,
+      "createOrderTask",
+      {
+        lambdaFunction: createOrder,
+      }
+    );
+
+    // How do you want to orcghestrate the above building blocks?
+    const parallelState = new cdk.aws_stepfunctions.Parallel(
+      this,
+      "parallelState",
+      {}
+    );
+    parallelState.branch(updateItemStockMappedTask, createOrderTask);
+
+    // if isItemStockMapped fails, then the parallelState will fail
+    const starter = isItemInStockMappedTask.next(parallelState);
+
+    // Bring it all together
+    const myFirstStateMachine = new cdk.aws_stepfunctions.StateMachine(
+      this,
+      "myFirstStateMachine",
+      {
+        definitionBody:
+          cdk.aws_stepfunctions.DefinitionBody.fromChainable(starter),
+      }
+    );
   }
-
-  
-
 }

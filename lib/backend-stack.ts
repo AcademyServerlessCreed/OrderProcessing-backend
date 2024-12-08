@@ -74,5 +74,28 @@ export class BackendStack extends cdk.Stack {
         },
       ],
     });
+
+    /* Creating our Lambda function for UploadFile
+     * - This function is triggered when a file is uploaded to our S3 bucket
+     * - It creates a product in our (Products) table
+     *  - Grants write access to the Products table
+     */
+
+    const uploadFileLambda = new cdk.aws_lambda_nodejs.NodejsFunction(
+      this,
+      "UploadFileFunction",
+      {
+        entry: path.join(__dirname, "UploadFile", "handler.ts"),
+        handler: "handler",
+        environment: {
+          TABLE_NAME: ProductTable.tableName,
+          BUCKET_NAME: bucket.bucketName,
+        },
+      }
+    );
+
+    ProductTable.grantReadWriteData(uploadFileLambda);
+    bucket.grantPut(uploadFileLambda);
+    bucket.grantPutAcl(uploadFileLambda);
   }
 }

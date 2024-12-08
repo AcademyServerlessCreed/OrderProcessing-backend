@@ -326,5 +326,21 @@ export class BackendStack extends cdk.Stack {
           cdk.aws_stepfunctions.DefinitionBody.fromChainable(starter),
       }
     );
+
+    // Using Lambda Proxy Approach
+    const stepFunctionsProxyLambda = new cdk.aws_lambda_nodejs.NodejsFunction(
+      this,
+      "StepFunctionsProxyFunction",
+      {
+        entry: path.join(__dirname, "StepFunctionsProxy", "handler.ts"),
+        handler: "handler",
+        runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+      }
+    );
+    stepFunctionsProxyLambda.addEnvironment(
+      "STATE_MACHINE_ARN",
+      myFirstStateMachine.stateMachineArn
+    );
+    myFirstStateMachine.grantStartExecution(stepFunctionsProxyLambda);
   }
 }

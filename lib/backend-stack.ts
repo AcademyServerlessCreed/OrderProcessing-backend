@@ -233,5 +233,19 @@ export class BackendStack extends cdk.Stack {
       }
     );
     ProductTable.grantReadWriteData(isItemInStock);
+
+    const updateItemStock = new cdk.aws_lambda_nodejs.NodejsFunction(
+      this,
+      "updateItemStock",
+      {
+        entry: path.join(__dirname, "updateItemStock", "handler.ts"),
+        handler: "handler",
+        runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+        environment: {
+          TABLE_NAME: ProductTable.tableName,
+        },
+      }
+    );
+    ProductTable.grantReadWriteData(updateItemStock);
   }
 }

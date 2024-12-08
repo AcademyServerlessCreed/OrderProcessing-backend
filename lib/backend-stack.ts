@@ -54,5 +54,25 @@ export class BackendStack extends cdk.Stack {
       }
     );
     UsersTable.grantWriteData(postConfirmation);
+
+    /* Creating our S3 bucket
+     * - This is where we will store our images
+     * - Grants write access to the bucket
+     */
+
+    const bucket = new cdk.aws_s3.Bucket(this, "ImageBucket", {
+      cors: [
+        {
+          allowedMethods: [
+            cdk.aws_s3.HttpMethods.GET,
+            cdk.aws_s3.HttpMethods.PUT,
+            cdk.aws_s3.HttpMethods.POST,
+            cdk.aws_s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+        },
+      ],
+    });
   }
 }

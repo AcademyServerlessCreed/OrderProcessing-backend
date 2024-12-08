@@ -217,5 +217,21 @@ export class BackendStack extends cdk.Stack {
         authorizer: authorizer,
       }
     );
+
+    // Step Functions Lambda
+    const isItemInStock = new cdk.aws_lambda_nodejs.NodejsFunction(
+      this,
+      "isItemInStock",
+      {
+        entry: path.join(__dirname, "isItemInStock", "handler.ts"),
+        handler: "handler",
+        runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+
+        environment: {
+          TABLE_NAME: ProductTable.tableName,
+        },
+      }
+    );
+    ProductTable.grantReadWriteData(isItemInStock);
   }
 }

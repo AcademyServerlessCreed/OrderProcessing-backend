@@ -1,4 +1,6 @@
 import * as cdk from "aws-cdk-lib";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { Construct } from "constructs";
 import path = require("path");
 
@@ -158,6 +160,61 @@ export class BackendStack extends cdk.Stack {
         userPoolId: userPool.userPoolId,
         groupName: "admin",
         description: "Admin user group",
+      }
+    );
+
+    /* Creating our API Authorizer and API
+     * - This is where we will manage our API
+     * - Create Route For UploadFile
+     */
+
+    const authorizer = new HttpUserPoolAuthorizer(
+      "UserPoolAuthorizer",
+      userPool,
+      {
+        userPoolClients: [client],
+        identitySource: ["$request.header.Authorization"],
+      }
+    );
+
+    const API = new cdk.aws_apigatewayv2.HttpApi(this, "TodoHttpAPI", {
+      apiName: "SFAPI",
+      corsPreflight: {
+        allowHeaders: ["*"],
+        allowMethods: [
+          cdk.aws_apigatewayv2.CorsHttpMethod.GET,
+          cdk.aws_apigatewayv2.CorsHttpMethod.POST,
+          cdk.aws_apigatewayv2.CorsHttpMethod.PUT,
+          cdk.aws_apigatewayv2.CorsHttpMethod.DELETE,
+          cdk.aws_apigatewayv2.CorsHttpMethod.OPTIONS,
+        ],
+        allowOrigins: ["*"],
+        maxAge: cdk.Duration.days(10),
+      },
+      defaultAuthorizer: new HttpUserPoolAuthorizer(
+        "UserpoolAuthorizer",
+        userPool
+      ),
+    });
+
+    /* Creating our route for UploadFile
+     * - This is where we will manage our UploadFile route
+     *  - Grants write access to the UploadFile Lambda function
+     */
+    const uploadImageRoute = new cdk.aws_apigatewayv2.HttpRoute(
+      this,
+      "UploadFileRoute",
+      {
+        httpApi: API,
+        routeKey: cdk.aws_apigatewayv2.HttpRouteKey.with(
+          "/uploadFile",
+          cdk.aws_apigatewayv2.HttpMethod.POST
+        ),
+        integration: new HttpLambdaIntegration(
+          "UploadImageIntegration",
+          uploadFileLambda
+        ),
+        authorizer: authorizer,
       }
     );
   }

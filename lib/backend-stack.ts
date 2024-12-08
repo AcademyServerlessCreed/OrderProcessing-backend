@@ -342,5 +342,37 @@ export class BackendStack extends cdk.Stack {
       myFirstStateMachine.stateMachineArn
     );
     myFirstStateMachine.grantStartExecution(stepFunctionsProxyLambda);
+
+    const createOrderResourceRoute = new cdk.aws_apigatewayv2.HttpRoute(
+      this,
+      "CreateOrderResourceRoute",
+      {
+        httpApi: API,
+        routeKey: cdk.aws_apigatewayv2.HttpRouteKey.with(
+          "/createOrder",
+          cdk.aws_apigatewayv2.HttpMethod.POST
+        ),
+        integration: new HttpLambdaIntegration(
+          "CreateOrderIntegration",
+          stepFunctionsProxyLambda
+        ),
+        authorizer: authorizer,
+      }
+    );
+
+    // list all ids/outputs
+    new cdk.CfnOutput(this, "APIGatewayURL", {
+      value: API.url ?? "Something went wrong with the deployment",
+    });
+    new cdk.CfnOutput(this, "UserPoolOutput", {
+      value: userPool.userPoolId,
+    });
+    new cdk.CfnOutput(this, "UserPoolClientOutput", {
+      value: client.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, "BucketOutput", {
+      value: bucket.bucketName,
+    });
   }
 }
